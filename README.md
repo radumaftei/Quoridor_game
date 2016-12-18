@@ -1,12 +1,20 @@
 # Quoridor_game
 #include <iostream>
+
 #include <windows.h>
+
 using namespace std;
+
 void setcolor(unsigned short color)
+
 {
+
 HANDLE hcon = GetStdHandle(STD_OUTPUT_HANDLE);
+
 SetConsoleTextAttribute(hcon,color);
+
 }
+
 /// 1-dark blue 2-pale dark green 3-pale dark cyan 4-dark red 5-dark purple-pink 6-dark yellow 7-default white?
 /// 8-gray 9-blue 10-green 11-cyan 12-red 13-pink 14-yellow 15-brighter 9
 /// the rest influences the backround
