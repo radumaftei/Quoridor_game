@@ -72,3 +72,45 @@ if(abort==0)
 }
 menu();
 }
+
+void logIn(nod* L)
+{
+if(numberOfPlayers==4)
+    cout<<"4 players already logged in."<<'\n',system("pause"),menu();
+char idI[21],passI[21];
+int okay=1; int nr1=0; int nr2=0; int abort=0;int okay1=0;int okay2=0;
+while(okay)
+    {
+    cout<<"Type in 0 for both username and password if you want to abort.";
+    cout<<'\n';
+    cout<<"Username:";
+    cin>>idI;
+    cout<<"Password:";
+    cin>>passI;
+    if(idI[0]==0 && idI[1]=='NULL' && passI[0]==0 && passI[1]=='NULL')
+        menu();
+    else {
+            nod* p;
+            p=L;
+            while(p!=NULL)
+                {
+                 if(strcmp(idI,p->id)==0 && strcmp(passI,p->pass)==0)
+                    okay1=0,okay2=0;
+                 else p=p->urm;
+                }
+
+            if(passI[21]!='NULL' || idI[21]!='NULL')
+                okay=1,okay1=1,okay2=1;
+
+         }
+    if(okay1==1 || okay2==1)
+        cout<<"Username or password incorrect!"<<'\n';
+    if(okay1==0 && okay2==0)
+        okay=0;
+    }
+    for(int i=0;i<=3;i++)
+        if(playerName[i][0]=='NULL')
+            for(int j=0;j<=20;j++)
+            playerName[i][j]=idI[j];
+    numberOfPlayers++;
+}
