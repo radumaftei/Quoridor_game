@@ -114,3 +114,25 @@ while(okay)
             playerName[i][j]=idI[j];
     numberOfPlayers++;
 }
+
+
+
+
+void logout()
+{
+int okay=0;
+int nr=0;
+while(okay)
+{cout<<"Which player will log out?(1,2,3,4)"<<'\n';
+cin>>nr;
+nr--;
+if(nr>=0 && nr<=3)
+    {
+    for(int i=0;i<=20;i++)
+        {
+        playerName[nr-1][i]='NULL';
+        }
+    okay=0;numberOfPlayers--;
+    }
+}
+}
