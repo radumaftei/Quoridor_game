@@ -10,13 +10,36 @@ SetConsoleTextAttribute(hcon,color);
 /// 1-dark blue 2-pale dark green 3-pale dark cyan 4-dark red 5-dark purple-pink 6-dark yellow 7-default white?
 /// 8-gray 9-blue 10-green 11-cyan 12-red 13-pink 14-yellow 15-brighter 9
 /// the rest influences the backround
+int mat1[16][16],mat2[19][19],playerNumber,nrWa[3],numberOfPlayers=0;
+char playerName[3][20];
+int test1,test2,testp;
+char c;
+struct playerStruct
+{
+    int ai;
+};
+playerStruct player[3];
 struct nod
 {
  char id[20];
  char pass[20];
  nod* urm;
 };
-void menu();
+void menu()
+{
+cout<<"Welcome to le game"<<'\n';
+for(int i=0;i<=3;i++)
+    {for(int j=0;j<=20;j++)
+        cout<<playerName[i][j];
+    cout<<'\n';
+    }
+cout<<"There are "<<numberOfPlayers<<" players logged in"<<'\n';
+cout<<"Log in"<<'\n';
+cout<<"Play against AI (if you are not logged in you will play as a guest)"<<'\n';
+cout<<"Play with friends and AI"<<'\n';
+
+
+}
 void createNewAccount(nod*& L)
 {
 char idI[21],passI[21];
@@ -35,28 +58,21 @@ while(okay)
     i=0;
     while(passI[i])
         nr2++,i++;
-    if( (nr1==1 || nr2==1) && (idI[0]!='0' || passI[0]!='0') ) 
-      cout<<"Numarul de caractere pentru username sau parola trebuie sa fie cel putin 2!"<<'\n';
-    else 
-      if(nr1>=22 || nr2>=22) 
-        cout<<"Numarul de caractere pentrul username sau parola trebuie sa fie cel mult 21!"<<'\n';
-            else 
-              if(nr1>1 && nr1<22 && nr2>1 && nr2<22) okay=0;
-                else 
-                  if (nr1==1 && nr2==1 && idI[0]=='0' && passI[0]=='0' ) 
-                    okay=0,abort=1;
+    if( (nr1==1 || nr2==1) && (idI[0]!='0' || passI[0]!='0') ) cout<<"Numarul de caractere pentru username sau parola trebuie sa fie cel putin 2!"<<'\n';
+    else if(nr1>=22 || nr2>=22) cout<<"Numarul de caractere pentrul username sau parola trebuie sa fie cel mult 21!"<<'\n';
+            else if(nr1>1 && nr1<22 && nr2>1 && nr2<22) okay=0;
+                else if ( (nr1==1 || nr2==1) && idI[0]=='0' && passI[0]=='0' ) okay=0,abort=1;
     if(okay==1)
         {
             nr1=0;
             nr2=0;
             for(int i=0;i<=20;i++)
-                idI[i]=NULL,passI[i]=NULL;
+                idI[i]='\0',passI[i]='\0';
         }
 
     }
 if(abort==0)
 {
-    L=NULL;
     nod* p;
     p=new nod;
     for(int i=0;i<=20;i++)
@@ -70,16 +86,25 @@ if(abort==0)
     cout<<"Account created!"<<'\n';
     system("pause");
 }
-menu();
 }
-
+int logInAbort()
+{
+return 0;
+}
 void logIn(nod* L)
 {
+nod* p;
+p=L;
+int s=1;
+int fail=0;
 if(numberOfPlayers==4)
     cout<<"4 players already logged in."<<'\n',system("pause"),menu();
 char idI[21],passI[21];
-int okay=1; int nr1=0; int nr2=0; int abort=0;int okay1=0;int okay2=0;
-while(okay)
+int okay=0;int okay1=0;int okay2=0;
+int nr1=0;int nr2=0;
+while(!okay)
+    {
+    do
     {
     cout<<"Type in 0 for both username and password if you want to abort.";
     cout<<'\n';
@@ -87,50 +112,59 @@ while(okay)
     cin>>idI;
     cout<<"Password:";
     cin>>passI;
-    if(idI[0]==0 && idI[1]=='NULL' && passI[0]==0 && passI[1]=='NULL')
-        menu();
+    }while(strlen(passI)>21 && strlen(idI)>21);
+    if( (idI[0]==0 && strlen(idI)==1 && passI[0]==0 && strlen(passI)==1)||(strlen(passI)==22 || strlen(idI)==22))
+        cout<<"Too many characters or aborted"<<'\n',system("pause"),numberOfPlayers--,menu();
     else {
-            nod* p;
-            p=L;
-            while(p!=NULL)
+            while(p!=NULL && s)
                 {
-                 if(strcmp(idI,p->id)==0 && strcmp(passI,p->pass)==0)
-                    okay1=0,okay2=0;
-                 else p=p->urm;
+                 okay1=0;okay2=0;
+                 if(strlen(p->id)==strlen(idI))
+                    {for(int i=0;i<strlen(idI);i++)
+                        if(p->id[i]!=idI[i])
+                            okay1=1;
+                    }
+                 else okay1=1;
+                if(strlen(p->pass)==strlen(passI))
+                    {for(int i=0;i<strlen(passI);i++)
+                        if(p->pass[i]!=passI[i])
+                            okay2=1;
+                    }
+                 else okay2=1;
+                 if(okay1==0 && okay2==0)
+                    s=0;
+                  p=p->urm;
                 }
-
-            if(passI[21]!='NULL' || idI[21]!='NULL')
-                okay=1,okay1=1,okay2=1;
-
          }
-    if(okay1==1 || okay2==1)
+    if( (okay1==1 || okay2==1)&& s==1)
         cout<<"Username or password incorrect!"<<'\n';
     if(okay1==0 && okay2==0)
-        okay=0;
+        cout<<"Login succesful"<<'\n',system("pause");
+    okay=1;
     }
+    if(p==NULL && s==1)
+        cout<<"Login failed,there is no such account"<<'\n',fail=1,system("pause");
+    else
     for(int i=0;i<=3;i++)
-        if(playerName[i][0]=='NULL')
-            for(int j=0;j<=20;j++)
-            playerName[i][j]=idI[j];
-    numberOfPlayers++;
+        if(playerName[i][0]=='\0')
+            {for(int j=0;j<strlen(idI);j++)
+                playerName[i][j]=idI[j];
+            i=5;
+            }
+    if(fail==0) numberOfPlayers++;
 }
-
-
-
-
 void logout()
 {
 int okay=0;
 int nr=0;
-while(okay)
+while(!okay)
 {cout<<"Which player will log out?(1,2,3,4)"<<'\n';
 cin>>nr;
-nr--;
-if(nr>=0 && nr<=3)
+if(nr>=0 && nr<=3) ///check if player actually is logged in
     {
     for(int i=0;i<=20;i++)
         {
-        playerName[nr-1][i]='NULL';
+        playerName[nr-1][i]='\0';
         }
     okay=0;numberOfPlayers--;
     }
