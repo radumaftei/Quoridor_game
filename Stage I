@@ -1,0 +1,168 @@
+#include <iostream>
+#include <windows.h>
+#include <cstring>
+#include <cstdlib>
+using namespace std;
+int turn, m[17][17], mat1[17][17], m2[17][17], m3[17][17],m4[17][17], playerNumber, nrWa[4], numberOfPlayers = 0, act,l,r;
+char playerName[3][20];
+char translate[21][21];
+char c;
+struct playerStruct
+{
+	int ai;
+};
+playerStruct player[3];
+struct nod
+{
+	char id[20];
+	char pass[20];
+	nod* urm;
+};
+nod *L;
+struct replayStruct
+{
+	int mat[17][17];
+};
+replayStruct rep[200];
+struct minStruct
+{
+	int l;
+	int co;
+	int ord;
+	int dir;
+};
+minStruct minn;
+void write()
+{
+	for(int i=0;i<=16;i++)
+		for (int j = 0; j <= 16; j++)
+		{
+			if (mat1[i][j] == 0) cout << "*"<<" ";
+			if (mat1[i][j] == -1) cout << "W"<<" ";
+			if (mat1[i][j] >= 1 && mat1[i][j] <= 4) cout << mat1[i][j]<<" ";
+			if (j == 16) cout << "\n";
+		}
+}
+void replay();
+void menu(nod* L);
+void createNewAccount(nod*& L)
+{
+	char idI[21], passI[21];
+	int okay = 1, nr1 = 0, nr2 = 0, abort = 0;
+	while (okay)
+	{
+		cout << "Type in 0 for both username and password if you want to abort.";
+		cout << '\n';
+		cout << "Username:";
+		cin >> idI;
+		cout << "Password:";
+		cin >> passI;
+		int i = 0;
+		while (idI[i])
+			nr1++, i++;
+		i = 0;
+		while (passI[i])
+			nr2++, i++;
+		if ((nr1 == 1 || nr2 == 1) && (idI[0] != '0' || passI[0] != '0')) cout << "Numarul de caractere pentru username sau parola trebuie sa fie cel putin 2!" << '\n';
+		else if (nr1 >= 22 || nr2 >= 22) cout << "Numarul de caractere pentrul username sau parola trebuie sa fie cel mult 21!" << '\n';
+		else if (nr1>1 && nr1<22 && nr2>1 && nr2<22) okay = 0;
+		else if ((nr1 == 1 || nr2 == 1) && idI[0] == '0' && passI[0] == '0') okay = 0, abort = 1;
+		if (okay == 1)
+		{
+			nr1 = 0;
+			nr2 = 0;
+			for (int i = 0; i <= 20; i++)
+				idI[i] = '\0', passI[i] = '\0';
+		}
+
+	}
+	if (abort == 0)
+	{
+		nod* p;
+		p = new nod;
+		for (int i = 0; i <= 20; i++)
+			p->id[i] = idI[i];
+		for (int i = 0; i <= 20; i++)
+			p->pass[i] = passI[i];
+		p->urm = L;
+		L = p;
+		cout << '\n';
+		cout << '\n';
+		cout << "Account created!" << '\n';
+		system("pause");
+	}
+	menu(L);
+}
+void logIn(nod* L)
+{
+	nod* p;
+	p = L;
+	int s = 1;
+	int fail = 0;
+	if (numberOfPlayers == 4)
+		cout << "4 players already logged in." << '\n', system("pause"), menu(L);
+	char idI[21], passI[21];
+	int okay = 0; int okay1 = 0; int okay2 = 0;
+	int nr1 = 0; int nr2 = 0;
+	while (!okay)
+	{
+		do
+		{
+			cout << "Type in 0 for both username and password if you want to abort.";
+			cout << '\n';
+			cout << "Username:";
+			cin >> idI;
+			cout << "Password:";
+			cin >> passI;
+		} while (strlen(passI)>21 && strlen(idI)>21);
+		if ((idI[0] == 0 && strlen(idI) == 1 && passI[0] == 0 && strlen(passI) == 1) || (strlen(passI) == 22 || strlen(idI) == 22))
+			cout << "Too many characters or aborted" << '\n', system("pause"), numberOfPlayers--, menu(L);
+		else {
+			while (p != NULL && s)
+			{
+				okay1 = 0; okay2 = 0;
+				if (strlen(p->id) == strlen(idI))
+				{
+					for (int i = 0; i<strlen(idI); i++)
+						if (p->id[i] != idI[i])
+							okay1 = 1;
+				}
+				else okay1 = 1;
+				if (strlen(p->pass) == strlen(passI))
+				{
+					for (int i = 0; i<strlen(passI); i++)
+						if (p->pass[i] != passI[i])
+							okay2 = 1;
+				}
+				else okay2 = 1;
+				if (okay1 == 0 && okay2 == 0)
+					s = 0;
+				p = p->urm;
+			}
+		}
+		if ((okay1 == 1 || okay2 == 1) && s == 1)
+			cout << "Username or password incorrect!" << '\n';
+		if (okay1 == 0 && okay2 == 0)
+			cout << "Login succesful" << '\n', system("pause");
+		okay = 1;
+	}
+	if (p == NULL && s == 1)
+		cout << "Login failed,there is no such account" << '\n', fail = 1, system("pause");
+	else
+		for (int i = 0; i <= 3; i++)
+			if (playerName[i][0] == '\0')
+			{
+				for (int j = 0; j<strlen(idI); j++)
+					playerName[i][j] = idI[j];
+				i = 5;
+			}
+	if (fail == 0) numberOfPlayers++;
+	menu(L);
+}
+void logout()
+{
+	if (numberOfPlayers >= 0)
+		numberOfPlayers--, menu(L);
+	if (numberOfPlayers == 0)
+		cout << "There are 0 players logged in therefor you cannot log out anyone" << '\n', menu(L);
+}
