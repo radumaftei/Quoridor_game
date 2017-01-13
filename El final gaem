@@ -1,0 +1,720 @@
+
+#include "stdafx.h"
+#include <iostream>
+#include <windows.h>
+#include <cstring>
+#include <cstdlib>
+using namespace std;
+void setcolor(unsigned short color)
+{
+	HANDLE hcon = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(hcon, color);
+}
+/// 1-dark blue 2-pale dark green 3-pale dark cyan 4-dark red 5-dark purple-pink 6-dark yellow 7-default white?
+/// 8-gray 9-blue 10-green 11-cyan 12-red 13-pink 14-yellow 15-brighter 9
+/// the rest influences the backround
+int turn, m[17][17], mat1[17][17], m2[17][17], m3[17][17],m4[17][17], playerNumber, nrWa[4], numberOfPlayers = 0, act,l;
+char playerName[3][20];
+char translate[21][21];
+char c;
+struct playerStruct
+{
+	int ai;
+};
+playerStruct player[3];
+struct nod
+{
+	char id[20];
+	char pass[20];
+	nod* urm;
+};
+nod *L;
+struct replayStruct
+{
+	int mat[17][17];
+};
+replayStruct rep[200];
+struct minStruct
+{
+	int l;
+	int co;
+	int ord;
+	int dir;
+};
+minStruct minn;
+void write()
+{	
+	for(int i=0;i<=16;i++)
+		for (int j = 0; j <= 16; j++)
+		{
+			if (mat1[i][j] == 0) cout << "*"<<" ";
+			if (mat1[i][j] == -1) cout << "W"<<" ";
+			if (mat1[i][j] >= 1 && mat1[i][j] <= 4) cout << mat1[i][j]<<" ";
+			if (j == 16) cout << "\n";
+		}
+}
+void replay();
+void menu(nod* L);
+void createNewAccount(nod*& L)
+{
+	char idI[21], passI[21];
+	int okay = 1, nr1 = 0, nr2 = 0, abort = 0;
+	while (okay)
+	{
+		cout << "Type in 0 for both username and password if you want to abort.";
+		cout << '\n';
+		cout << "Username:";
+		cin >> idI;
+		cout << "Password:";
+		cin >> passI;
+		int i = 0;
+		while (idI[i])
+			nr1++, i++;
+		i = 0;
+		while (passI[i])
+			nr2++, i++;
+		if ((nr1 == 1 || nr2 == 1) && (idI[0] != '0' || passI[0] != '0')) cout << "Numarul de caractere pentru username sau parola trebuie sa fie cel putin 2!" << '\n';
+		else if (nr1 >= 22 || nr2 >= 22) cout << "Numarul de caractere pentrul username sau parola trebuie sa fie cel mult 21!" << '\n';
+		else if (nr1>1 && nr1<22 && nr2>1 && nr2<22) okay = 0;
+		else if ((nr1 == 1 || nr2 == 1) && idI[0] == '0' && passI[0] == '0') okay = 0, abort = 1;
+		if (okay == 1)
+		{
+			nr1 = 0;
+			nr2 = 0;
+			for (int i = 0; i <= 20; i++)
+				idI[i] = '\0', passI[i] = '\0';
+		}
+
+	}
+	if (abort == 0)
+	{
+		nod* p;
+		p = new nod;
+		for (int i = 0; i <= 20; i++)
+			p->id[i] = idI[i];
+		for (int i = 0; i <= 20; i++)
+			p->pass[i] = passI[i];
+		p->urm = L;
+		L = p;
+		cout << '\n';
+		cout << '\n';
+		cout << "Account created!" << '\n';
+		system("pause");
+	}
+	menu(L);
+}
+void logIn(nod* L)
+{
+	nod* p;
+	p = L;
+	int s = 1;
+	int fail = 0;
+	if (numberOfPlayers == 4)
+		cout << "4 players already logged in." << '\n', system("pause"), menu(L);
+	char idI[21], passI[21];
+	int okay = 0; int okay1 = 0; int okay2 = 0;
+	int nr1 = 0; int nr2 = 0;
+	while (!okay)
+	{
+		do
+		{
+			cout << "Type in 0 for both username and password if you want to abort.";
+			cout << '\n';
+			cout << "Username:";
+			cin >> idI;
+			cout << "Password:";
+			cin >> passI;
+		} while (strlen(passI)>21 && strlen(idI)>21);
+		if ((idI[0] == 0 && strlen(idI) == 1 && passI[0] == 0 && strlen(passI) == 1) || (strlen(passI) == 22 || strlen(idI) == 22))
+			cout << "Too many characters or aborted" << '\n', system("pause"), numberOfPlayers--, menu(L);
+		else {
+			while (p != NULL && s)
+			{
+				okay1 = 0; okay2 = 0;
+				if (strlen(p->id) == strlen(idI))
+				{
+					for (int i = 0; i<strlen(idI); i++)
+						if (p->id[i] != idI[i])
+							okay1 = 1;
+				}
+				else okay1 = 1;
+				if (strlen(p->pass) == strlen(passI))
+				{
+					for (int i = 0; i<strlen(passI); i++)
+						if (p->pass[i] != passI[i])
+							okay2 = 1;
+				}
+				else okay2 = 1;
+				if (okay1 == 0 && okay2 == 0)
+					s = 0;
+				p = p->urm;
+			}
+		}
+		if ((okay1 == 1 || okay2 == 1) && s == 1)
+			cout << "Username or password incorrect!" << '\n';
+		if (okay1 == 0 && okay2 == 0)
+			cout << "Login succesful" << '\n', system("pause");
+		okay = 1;
+	}
+	if (p == NULL && s == 1)
+		cout << "Login failed,there is no such account" << '\n', fail = 1, system("pause");
+	else
+		for (int i = 0; i <= 3; i++)
+			if (playerName[i][0] == '\0')
+			{
+				for (int j = 0; j<strlen(idI); j++)
+					playerName[i][j] = idI[j];
+				i = 5;
+			}
+	if (fail == 0) numberOfPlayers++;
+	menu(L);
+}
+void logout()
+{
+	if (numberOfPlayers >= 0)
+		numberOfPlayers--, menu(L);
+	if (numberOfPlayers == 0)
+		cout << "There are 0 players logged in therefor you cannot log out anyone" << '\n', menu(L);
+}
+/// 4,294,967,295 is max of unsigned int.So that +1 should be 1 ?
+void writeAfter(int k)
+{
+	cout << '\n';
+	cout << '\n';
+	cout << '\n';
+	for (int i = 0; i<k; i++)
+	{
+		if (nrWa[i]) cout << "Player " << i + 1 << " has " << nrWa[i] << " more walls." << '\n';
+		else cout << "Player " << i + 1 << " has no more walls." << '\n';
+	}
+}
+void copyMat()
+{
+	for (int i = 0; i <= 16; i++)
+		for (int j = 0; j <= 16; j++)
+			if(mat1[i][j]!=0) m3[i][j] = -1;
+}
+int lee(int a, int b)
+{
+	copyMat();
+	int minim = 999;
+	for (int pas = 0; pas <= 256; pas++)
+	{
+		for (int i = 0; i <= 16; i += 2)
+			for (int j = 0; j <= 16; j += 2)
+			{
+				if (i + 2 <= 16 && m3[i][j] == 0 && m3[(i + 1)][j] == 0 && m3[(i + 2)][j] != 0 && m3[(i + 2)][j] >= 0) m3[i][j] = m3[(i + 2)][j] + 1;
+				if (i - 2 >= 0 && m3[i][j] == 0 && m3[(i - 1)][j] == 0 && m3[(i - 2)][j] != 0 && m3[(i - 2)][j] >= 0) m3[i][j] = m3[(i - 2)][j] + 1;
+				if (j + 2 <= 16 && m3[i][j] == 0 && m3[(i)][(j + 1)] == 0 && m3[(i)][(j + 2)] != 0 && m3[(i)][(j + 2)] >= 0) m3[i][j] = m3[(i)][(j + 2)] + 1;
+				if (j - 2 >= 0 && m3[i][j] == 0 && m3[(i)][(j - 1)] == 0 && m3[(i)][(j - 2)] != 0 && m3[(i)][(j - 2)] >= 0) m3[i][j] = m3[(i)][(j - 2)] + 1;
+			}
+	}
+	for (int i = 0; i <= 16; i += 2)
+	{
+		if (m3[16][i]<minim) minim = m3[16][i];
+	}
+	return minim;
+}
+void build()
+{
+	for (int pas = 0; pas <= 256; pas++)
+	{
+		for (int i = 0; i <= 16; i += 2)
+			for (int j = 0; j <= 16; j += 2)
+			{
+				if (i + 2 <= 16 && m[i][j] == 0 && m[(i + 1)][j] == 0 && m[(i + 2)][j] != 0 && m[(i + 2)][j] >= 0) m[i][j] = m[(i + 2)][j] + 1;
+				if (i - 2 >= 0 && m[i][j] == 0 && m[(i - 1)][j] == 0 && m[(i - 2)][j] != 0 && m[(i - 2)][j] >= 0) m[i][j] = m[(i - 2)][j] + 1;
+				if (j + 2 <= 16 && m[i][j] == 0 && m[(i)][(j + 1)] == 0 && m[(i)][(j + 2)] != 0 && m[(i)][(j + 2)] >= 0) m[i][j] = m[(i)][(j + 2)] + 1;
+				if (j - 2 >= 0 && m[i][j] == 0 && m[(i)][(j - 1)] == 0 && m[(i)][(j - 2)] != 0 && m[(i)][(j - 2)] >= 0) m[i][j] = m[(i)][(j - 2)] + 1;
+			}
+	}
+}
+void clearCopy()
+{
+	for (int i = 0; i <= 16; i++)
+		for (int j = 0; j <= 16; j++)
+			m[i][j] = 0;
+	for (int i = 0; i <= 16; i++)
+		for (int j = 0; j <= 16; j++)
+			if (m4[i][j] == -1 || m4[i][j] == -2) m[i][j] = m4[i][j];
+}
+void initCopy()
+{
+	for (int i = 0; i <= 16; i++)
+		for (int j = 0; j <= 16; j++)
+			m4[i][j] =0;
+	for (int i = 0; i <= 16; i++)
+		for (int j = 0; j <= 16; j++)
+			if(m[i][j]==-1 || m[i][j]==-2) m4[i][j] = m[i][j];
+	for (int i = 0; i <= 16; i++)
+		for (int j = 0; j <= 16; j++)
+			if (mat1[i][j] == -1 || mat1[i][j] == -2) m4[i][j] = mat1[i][j];
+}
+int validWall(int aa, int bb, int cc)
+{
+	for (int i = 0; i <= 16; i++)
+		for (int j = 0; j <= 16; j++)
+			if (mat1[i][j] == -1 || mat1[i][j] == -2) m[i][j] = -1;
+			else m[i][j] = 0;
+			numberOfPlayers = l;
+	int playerCopy = numberOfPlayers;
+	int coordI = 0, coordJ = 0;
+	int valid1 = 0, valid2 = 0, valid3 = 0, valid4 = 0;
+	/// if aa par and bb impar or aa impar and bb par (is this rule even valid tho)
+	if ((aa % 2 == 0 && bb % 2 == 1) || (aa % 2 == 1 && bb % 2 == 0))
+	{
+		if (cc == 1 && aa >= 0 && aa <= 16 && aa - 2 >= 0 && mat1[aa][bb] != -1 && mat1[(aa - 2)][(bb)] != -1) m[aa][bb] = -1, m[(aa - 2)][(bb)] = -1;
+		else if (cc == 1) return 0;
+		if (cc == 2 && aa >= 0 && aa <= 16 && aa + 2 <= 16 && m[aa][bb] != -1 && m[(aa + 2)][(bb)] != -1) m[aa][bb] = -1, m[(aa + 2)][(bb)] = -1;
+		else if (cc == 2) return 0;
+		if (cc == 3 && bb >= 0 && bb <= 16 && bb - 2 >= 0 && m[aa][bb] != -1 && m[aa][(bb - 2)] != -1) m[aa][bb] = -1, m[aa][(bb - 2)] = -1;
+		else if (cc == 3) return 0;
+		if (cc == 4 && bb >= 0 && bb <= 16 && bb + 2 >= 16 && m[aa][bb] != -1 && m[aa][(bb + 2)] != -1) m[aa][bb] = -1, m[aa][(bb + 2)] = -1;
+		else if (cc == 4) return 0;
+	}
+	else return 0;
+	initCopy();
+	clearCopy();
+	if (playerCopy>0)
+	{
+		for (int i = 0; i <= 16; i++)
+			for (int j = 0; j <= 16; j++)
+				if (mat1[i][j] == 1) coordI = i, coordJ = j, playerCopy--, m[i][j] = 1;
+		build();
+		for (int i = 0; i <= 16; i += 2)
+			if (m[16][i] != 0) valid1 = 1, i = 18;
+	}
+
+	clearCopy();
+	if (playerCopy>0)
+	{
+		for (int i = 0; i <= 16; i++)
+			for (int j = 0; j <= 16; j++)
+				if (mat1[i][j] == 2) coordI = i, coordJ = j, playerCopy--, m[i][j] = 1;
+
+		build();
+		for (int i = 0; i <= 16; i += 2)
+			if (m[0][i] != 0) valid2 = 1, i = 18;
+	}
+
+	clearCopy();
+	if (playerCopy>0)
+	{
+		for (int i = 0; i <= 16; i++)
+			for (int j = 0; j <= 16; j++)
+				if (mat1[i][j] == 3) coordI = i, coordJ = j, playerCopy--, m[i][j] = 1;
+
+		build();
+		for (int i = 0; i <= 16; i += 2)
+			if (m[i][16] != 0) valid3 = 1, i = 18;
+	}
+
+	clearCopy();
+	if (playerCopy>0)
+	{
+		for (int i = 0; i <= 16; i++)
+			for (int j = 0; j <= 16; j++)
+				if (mat1[i][j] == 4) coordI = i, coordJ = j, playerCopy--, m[i][j] = 1;
+
+		build();
+		for (int i = 0; i <= 16; i += 2)
+			if (m[i][0] != 0) valid4 = 1, i = 18;
+	}
+
+
+	if (numberOfPlayers == 2 && valid1 == 1 && valid2 == 1) return 1;
+	if (numberOfPlayers == 4 && valid1 == 1 && valid2 == 1 && valid3 == 1 && valid4 == 1) return 1;
+	return 0;
+}
+void computerWall(int a, int b)
+{
+	int x, y, z;
+	/*int cycle = 0;
+	minn.l = 99999;
+	int traseuMinim = 999999;
+	int maximulMinimului = 0;
+	for (int i = 0; i <= 16; i++)
+		for (int j = 0; j <= 16; j++)
+			for (int k = 1; k <= 4; k++)
+				if (validWall(i, j, k))
+				{
+
+					if (cycle == 0) maximulMinimului = lee(a, b);
+					cycle++;
+
+					if (k == 1)
+					{
+						m3[i][j] = -1, m3[(i - 2)][j] = -1;
+						traseuMinim = lee(a, b);
+						if (maximulMinimului<=traseuMinim)  maximulMinimului=traseuMinim,minn.l = maximulMinimului, minn.ord = i, minn.co = j, minn.dir = k;
+					}
+
+					if (k == 2)
+					{
+						m3[i][j] = -1, m3[(i + 2)][j] = -1;
+						traseuMinim = lee(a, b);
+						if (maximulMinimului<=traseuMinim)  maximulMinimului = traseuMinim, minn.l = maximulMinimului, minn.ord = i, minn.co = j, minn.dir = k;
+
+					}
+					if (k == 3)
+					{
+						m3[i][j] = -1, m3[i][(j + 2)] = -1;
+						traseuMinim = lee(a, b);
+						if (maximulMinimului<=traseuMinim)  maximulMinimului = traseuMinim, minn.l = maximulMinimului, minn.ord = i, minn.co = j, minn.dir = k;
+					}
+					if (k == 4)
+					{
+						m3[i][j] = -1, m3[i][(j - 2)] = -1;
+						traseuMinim = lee(a, b);
+						if (maximulMinimului<=traseuMinim)  maximulMinimului = traseuMinim, minn.l = maximulMinimului, minn.ord = i, minn.co = j, minn.dir = k;
+					}
+				}
+				*/
+	x = rand() % 16+ 1;
+	y = rand() % 16 + 1;
+	z = rand() % 4 + 1;
+	while (!validWall(x, y, z))
+	{
+		x = rand() % 16 + 1;
+		y = rand() % 16 + 1;
+		z = rand() % 4 + 1;
+	}
+	if (z == 1) mat1[x][y] = -1, mat1[(x - 2)][y] = -1;
+	if (z == 2) mat1[x][y] = -1, mat1[(x+ 2)][y] = -1;
+	if (z == 3) mat1[x][y] = -1, mat1[x][(y + 2)] = -1;
+	if (z == 4) mat1[x][y] = -1, mat1[x][(y - 2)] = -1;
+	nrWa[(turn%numberOfPlayers)]--;
+}
+int validpc(int a,int b,int z)
+{
+	if (z == 1) if (mat1[(a - 1)][b] != -1 && (a - 1) >= 0) {  return 0; }
+	if (z == 2) if (mat1[(a + 1)][b] != -1 && (a + 1) <= 16) {  return 0; }
+	if (z == 3) if (mat1[a][(b - 1)] != -1 && (b - 1) >= 0) {  return 0; }
+	if (z == 4) if (mat1[a][(b + 1)] != -1 && (b + 1) <= 16) {  return 0; }
+	return 1;
+}
+void computerMove(int a, int b, int c)
+{
+	int z;
+	/*int minim = 999;
+	int coordonata = 0;
+	int ordonata = 0;
+	for (int pas = 0; pas <= 256; pas++)
+	{
+		for (int i = 0; i <= 16; i += 2)
+			for (int j = 0; j <= 16; j += 2)
+			{/// DO THE >0 FOR EVERY LEE IT IS NECESERY
+				if (i + 2 <= 16 && m2[i][j] == 0 && m2[(i + 1)][j] == 0 && m2[(i + 2)][j] != 0 && m2[(i + 2)][j] >= 0) m2[i][j] = m2[(i + 2)][j] + 1;
+				if (i - 2 >= 0 && m2[i][j] == 0 && m2[(i - 1)][j] == 0 && m2[(i - 2)][j] != 0 && m2[(i - 2)][j] >= 0) m2[i][j] = m2[(i - 2)][j] + 1;
+				if (j + 2 <= 16 && m2[i][j] == 0 && m2[(i)][(j + 1)] == 0 && m2[(i)][(j + 2)] != 0 && m2[(i)][(j + 2)] >= 0) m2[i][j] = m2[(i)][(j + 2)] + 1;
+				if (j - 2 >= 0 && m2[i][j] == 0 && m2[(i)][(j - 1)] == 0 && m2[(i)][(j - 2)] != 0 && m2[(i)][(j - 2)] >= 0) m2[i][j] = m2[(i)][(j - 2)] + 1;
+			}
+	}
+	if (a == 2)
+		for (int i = 0; i <= 16; i += 2)
+			if (m2[0][i]<minim) minim = m2[0][i], coordonata = 0, ordonata = i;
+	if (a == 4)
+		for (int i = 0; i <= 16; i += 2)
+			if (m2[i][0]<minim) minim = m2[i][0], coordonata = i, ordonata = 0;
+	while (m[coordonata][ordonata] != 2)
+	{
+		if (coordonata - 2 >= 0 && m2[(coordonata - 2)][ordonata] == m[coordonata][ordonata]) coordonata -= 2;
+		if (coordonata + 2 <= 16 && m2[(coordonata + 2)][ordonata] == m[coordonata][ordonata]) coordonata += 2;
+		if (ordonata - 2 >= 0 && m2[(coordonata)][(ordonata - 2)] == m[coordonata][ordonata]) ordonata -= 2;
+		if (ordonata + 2 <= 16 && m2[(coordonata)][(ordonata + 2)] == m[coordonata][ordonata]) ordonata += 2;
+	}
+	mat1[coordonata][ordonata] = mat1[a][b];
+	mat1[a][b] = 0;
+	*/
+	z = rand() % 4 + 1;
+	while (!validpc(a, b, z))
+	{
+		z = rand() % 4 + 1;
+	}
+	if (z == 1) if (mat1[(a - 1)][b] != -1 && (a - 1) >= 0) { mat1[(a - 2)][b] = mat1[a][b]; mat1[a][b] = 0; }
+	if (z == 2) if (mat1[(a + 1)][b] != -1 && (a + 1) <= 16) { mat1[(a + 2)][b] = mat1[a][b]; mat1[a][b] = 0;}
+	if (z == 3) if (mat1[a][(b - 1)] != -1 && (b - 1) >= 0) { mat1[a][(b - 2)] = mat1[a][b]; mat1[a][b] = 0;}
+	if (z == 4) if (mat1[a][(b + 1)] != -1 && (b + 1) <= 16) { mat1[a][(b + 2)] = mat1[a][b]; mat1[a][b] = 0;}
+
+
+}
+void computer(int a)
+{
+	int coordonata = 0;
+	int ordonata = 0;
+	for (int i = 1; i <= 16; i++)
+		for (int j = 1; j <= 16; j++)
+			m2[i][j] = 0;
+	if (nrWa[a - 1]>0)
+	{
+		if (a == 2)
+			for (int i = 1; i <= 16; i++)
+				for (int j = 1; j <= 16; j++)
+				{
+					if (mat1[i][j] == -2 || mat1[i][j] == -1) m2[i][j] = mat1[i][j];
+					if (mat1[i][j] == 1) m2[i][j] = 1, coordonata = i, ordonata = j;
+				}
+		if (a == 4)
+			for (int i = 1; i <= 16; i++)
+				for (int j = 1; j <= 16; j++)
+				{
+					if (mat1[i][j] == -2 || mat1[i][j] == -1) m2[i][j] = mat1[i][j];
+					if (mat1[i][j] == 3) m2[i][j] = 1, coordonata = i, ordonata = j;
+				}
+		computerWall(coordonata, ordonata);
+	}
+	else
+	{
+		/*for (int i = 0; i <= 16; i++)
+			for (int j = 0; j <= 16; j++)
+			{
+				if (mat1[i][j] != a && mat1[i][j] != 0 && mat1[i][j] != -1 && mat1[i][j] != -2) m2[i][j] = -1;
+				if (mat1[i][j] == -1 || mat1[i][j] == -2 || mat1[i][j] == 0) m2[i][j] = mat1[i][j];
+			}
+			*/
+		for (int i = 0; i <= 16; i++)
+			for (int j = 0; j <= 16; j++)
+				if (mat1[i][j] = a) computerMove(i, j, a);
+	}
+
+}
+
+void coordonatePerte(int &a, int &b, int &c)
+{
+		///test valid pt toate 3;
+		cout << "Ce rand" << '\n';
+		cin >> a;
+		cout << "Ce coloana" << '\n';
+		cin >> b;
+		cout << "Ce directie(Nord 1 Sud 2 Est 3 Vest 4)" << '\n';
+		cin >> c;
+}
+void coordonateMutare(int &c)
+{
+	c = 0;
+	while (c <= 0 || c >= 5)
+	{
+		cout << "Ce directie(Nord 1 Sud 2 Est 3 Vest 4)" << '\n';
+		cin >> c;
+	}
+}
+void pregame()
+{
+	for (int k = 0; k <= 200; k++)
+		for (int i = 0; i <= 16; i++)
+			for (int j = 0; j <= 16; j++)
+				rep[k].mat[i][j] = 0;
+	int rotation = 0;
+	int i = 0;
+	do {
+		if (i == 3) i = 0, rotation = 0;
+		if (playerName[i][0] == '\0' && playerName[i + 1][0] != '\0' && i<3)
+			for (int j = 0; j <= 20; j++)
+			{
+				playerName[i][j] = playerName[i + 1][j]; playerName[i + 1][j] = 0; rotation = 1;
+			}
+		else
+			i++;
+	} while (rotation == 0 && i == 3);
+
+}
+int winCond()
+{
+
+	for (int i = 0; i <= 16; i++)
+		if (mat1[0][i] == 2) return 2;
+	for (int i = 0; i <= 16; i++)
+		if (mat1[16][i] == 1) return 1;
+	for (int i = 0; i <= 16; i++)
+		if (mat1[i][16] == 3) return 3;
+	for (int i = 0; i <= 16; i++)
+		if (mat1[i][0] == 4) return 4;
+	return 0;
+}
+int validMove(int a, int b, int c)
+{
+	if (c == 1) if (mat1[(a - 1)][b] == -1 && (a - 1) >= 0) { cout << "Invalid direction" << '\n'; return 0; }
+	if (c == 2) if (mat1[(a + 1)][b] == -1 && (a + 1) <= 16) { cout << "Invalid direction" << '\n'; return 0; }
+	if (c == 3) if (mat1[a][(b - 1)] == -1 && (b - 1) >= 0) { cout << "Invalid direction" << '\n'; return 0; }
+	if (c == 4) if (mat1[a][(b + 1)] == -1 && (b + 1) <= 16) { cout << "Invalid direction" << '\n'; return 0; }
+	return 1;
+}
+void gameStart()
+{
+	act = 0;
+	l = numberOfPlayers;
+	pregame();
+	if (l == 0)
+		cout << "Not enough players to start a game" << '\n', menu(L);
+	if (l == 1)
+		numberOfPlayers = l + 1, player[1].ai = 1;
+	if (l == 3)
+		numberOfPlayers = l + 1, player[3].ai = 1;
+	
+	if (numberOfPlayers == 2)
+		mat1[0][8] = 1, mat1[16][8] = 2, nrWa[0] = 10, nrWa[1] = 10;
+	if (numberOfPlayers == 4)
+		mat1[0][8] = 1, mat1[16][8] = 2, mat1[8][0] = 3, mat1[8][8] = 4; nrWa[0] = 5, nrWa[1] = 5, nrWa[2] = 5, nrWa[3] = 5;
+	l = numberOfPlayers;
+	numberOfPlayers = l;
+	int actualTurn = 0;
+	int turn = 0;
+	if (numberOfPlayers == 4)
+		turn = 4;
+	else if (numberOfPlayers == 2) turn = 2;
+
+	while (winCond() == 0)
+	{
+		write();
+		act = 0;
+		actualTurn = (turn%numberOfPlayers) + 1;
+		cout << "Players " << actualTurn << " turn" << '\n';
+		if (player[(turn%numberOfPlayers)].ai == 1)
+			computer((turn%numberOfPlayers) + 1);
+		else
+		{
+			cout << "Press 1 to move and 2 to place a wall"<<'\n';
+			while (act != 1 && act != 2)
+			{
+				cin >> act;
+				if (act != 1 && act != 2) cout << "Invalid command"<<'\n';
+				if (nrWa[(turn%numberOfPlayers) + 1] == 0) cout << "Players" << (turn%numberOfPlayers) + 1 << "has no more walls.You have to move instead." << '\n', act = 1;
+			}
+			if (act == 2)
+			{
+				int x = 0; int y = 0; int d = 0;
+				do {
+					cout << "Alegeti unde va fi plasat peretele"<<'\n';
+					coordonatePerte(x, y, d);
+				} while ( (!validWall(x, y, d)));
+				if (d == 1) mat1[x][y] = -1, mat1[(x - 2)][y] = -1;
+				if (d == 2) mat1[x][y] = -1, mat1[(x + 2)][y] = -1;
+				if (d == 3) mat1[x][y] = -1, mat1[x][(y + 2)] = -1;
+				if (d == 4) mat1[x][y] = -1, mat1[x][(y - 2)] = -1;
+				nrWa[(turn%numberOfPlayers) + 1]--;
+			}
+			if (act == 1)
+			{
+				int d = 0;
+				for (int i = 0; i <= 16; i+=2)
+					for (int j = 0; j <= 16; j+=2 )
+						if (mat1[i][j] == (turn%numberOfPlayers) + 1)
+						{
+							coordonateMutare(d);
+							while (!validMove(i, j, d)) coordonateMutare(d), cout << "Invalid" << '\n';
+							if (d == 1)
+								if (mat1[(i - 2)][j] == 0 && i - 2 >= 0)
+									mat1[(i - 2)][j] = mat1[i][j], mat1[i][j] = 0;
+								else if (mat1[(i - 3)][j] == 0 && i - 4 >= 0)
+									mat1[(i - 4)][j] = mat1[i][j], mat1[i][j] = 0;
+								else if (mat1[(i - 2)][(j + 1)] == 0 && i - 2 >= 0 && j + 2 <= 16)
+									mat1[(i - 2)][(j + 2)] = mat1[i][j], mat1[i][j] = 0;
+								else if (mat1[(i - 2)][(j - 1) == 0] && i - 2 >= 0 && j - 2 >= 0)
+									mat1[(i - 2)][(j - 2)] = mat1[i][j], mat1[i][j] = 0;
+							if (d == 2)
+								if (mat1[(i + 2)][j] == 0 && i + 2 <= 16)
+									mat1[(i + 2)][j] = mat1[i][j], mat1[i][j] = 0;
+								else if (mat1[(i + 3)][j] == 0 && i + 4 <= 16)
+									mat1[(i + 4)][(j)] = mat1[i][j], mat1[i][j] = 0;
+								else if (mat1[(i + 2)][(j + 1)] == 0 && i + 2 <= 16 && j + 2 <= 16)
+									mat1[(i + 2)][(j + 2)] = mat1[i][j], mat1[i][j] = 0;
+								else if (mat1[(i + 2)][(j - 1)] == 0 && i + 2 <= 16 && j - 2 >= 0)
+									mat1[(i + 2)][(j - 2)] = mat1[i][j], mat1[i][j] = 0;
+							if (d == 3)
+								if (mat1[i][(j - 2)] == 0)
+									mat1[(i)][(j - 2)] = mat1[i][j], mat1[i][j] = 0;
+								else if (mat1[i][(j - 3)] == 0 && j - 4 >= 0)
+									mat1[(i)][(j - 4)] = mat1[i][j], mat1[i][j] = 0;
+								else if (mat1[i + 1][(j - 2)] == 0 && j - 2 >= 0 && i + 2 <= 16)
+									mat1[(i + 2)][(j - 2)] = mat1[i][j], mat1[i][j] = 0;
+								else if (mat1[(i - 1)][(j - 2)] == 0 && j - 2 >= 0 && i - 2 >= 0)
+									mat1[(i - 2)][(j - 2)] = mat1[i][j], mat1[i][j] = 0;
+
+							if (d == 4)
+								if (mat1[i][(j + 2)] == 0 && j + 2 <= 16)
+									mat1[(i)][(j + 2)] = mat1[i][j], mat1[i][j] = 0;
+								else if (mat1[(i)][j + 3] == 0 && j + 4 <= 16)
+									mat1[(i)][(j + 4)] = mat1[i][j], mat1[i][j] = 0;
+								else if (mat1[(i + 1)][j + 2] == 0 && i + 2 <= 16 && j + 2 <= 16)
+									mat1[(i + 2)][(j + 4)] = mat1[i][j], mat1[i][j] = 0;
+								else if (mat1[(i - 1)][j + 2] == 0 && i - 2 >= 0 && j + 2 <= 16)
+									mat1[(i - 2)][(j + 2)] = mat1[i][j], mat1[i][j] = 0;
+
+							i = 17, j = 17;
+						}
+			}
+		}
+		for (int i = 0; i <= 16; i++)
+			for (int j = 0; j <= 16; j++)
+				rep[turn - numberOfPlayers].mat[i][j] = mat1[i][j];
+		turn++;
+	}
+	for (int i = 0; i <= 3; i++)
+		player[i].ai = 0;
+	cout << "Player" << winCond() << " has won the game" << '\n', system("pause");
+	menu(L);
+}
+void afis(nod* L)
+{
+	nod* p; p = L;
+	while (p != NULL)
+	{
+		cout << p->id << "\n", cout << p->pass << '\n';
+		p = p->urm;
+	}
+	cout << "\n";
+}void vrep(int z)
+{
+	for (int i = 0; i <= 16; i++)
+		for (int j = 0; j <= 16; j++)
+		{
+			if (rep[z].mat[i][j] == 0) cout << "*" << " ";
+			if (rep[z].mat[i][j] == -1) cout << "W" << " ";
+			if (rep[z].mat[i][j] >= 1 && rep[z].mat[i][j] <= 4) cout << rep[z].mat[i][j] << " ";
+			if (j == 16) cout << "\n";
+		}
+}
+int main()
+{
+	L = NULL;
+	menu(L);
+}
+void replayy()
+{
+	int in = 0;
+	if (turn != 0)
+	{
+		int i = turn;
+		while ((i - 1) >= 0 && i <= turn)
+		{
+			cout << "-1 to quit|1 to go backwards|2 to go forwards" << '\n';
+			cin >> in;
+			if (in == 1) i--;
+			if (in == 2) i++;
+			if (in != -1)
+			{
+				vrep(i);
+			}
+		}
+	}
+	if (turn == 0) cout << "There is no game to replay." << '\n';
+	menu(L);
+
+}
+void menu(nod* L)
+{
+	int c = 0;
+	cout << "Welcome to le game" << '\n';
+	cout << "There are " << numberOfPlayers << " players logged in" << '\n';
+	cout << "Press 1 to Log in" << '\n';
+	cout << "Press 2 to Create an Account" << '\n';
+	cout << "Press 3 to start a new game" << '\n';
+	cout << "Press 4 to view a replay of the last game" << '\n';
+	cout << "Press 5 to log out someone(the account will be deleted)" << '\n';
+	cin >> c;
+	if (c == 1) logIn(L);
+	if (c == 2) createNewAccount(L);
+	if (c == 3) gameStart();
+	if (c == 4) replayy();
+	if (c == 5) logout();
+}
