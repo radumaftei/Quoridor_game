@@ -33,7 +33,7 @@ struct minStruct
 };
 minStruct minn;
 void write()
-{
+{	
 	for(int i=0;i<=16;i++)
 		for (int j = 0; j <= 16; j++)
 		{
@@ -518,11 +518,11 @@ void gameStart()
 		numberOfPlayers = l + 1, player[1].ai = 1;
 	if (l == 3)
 		numberOfPlayers = l + 1, player[3].ai = 1;
-
+	
 	if (numberOfPlayers == 2)
 		mat1[0][8] = 1, mat1[16][8] = 2, nrWa[0] = 10, nrWa[1] = 10;
 	if (numberOfPlayers == 4)
-		mat1[0][8] = 1, mat1[16][8] = 2, mat1[8][0] = 3, mat1[8][8] = 4, nrWa[0] = 5, nrWa[1] = 5, nrWa[2] = 5, nrWa[3] = 5;
+		mat1[0][8] = 1, mat1[16][8] = 2, mat1[8][0] = 3, mat1[8][16] = 4, nrWa[0] = 5, nrWa[1] = 5, nrWa[2] = 5, nrWa[3] = 5;
 	l = numberOfPlayers;
 	numberOfPlayers = l;
 	int actualTurn = 0;
