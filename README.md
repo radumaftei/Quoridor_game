@@ -42,5 +42,12 @@ fiecare jucător dispune de câte 5 ziduri.
 Regulile de joc sunt identice ca la jocul în 2, cu precizarea că un pion nu poate sări decât cel
 mult peste un alt pion . 
 
-
+(*)In plus fata de jocul general :
+  I. Fiecare jucator isi va crea un cont ( username + password )
+  II. Functie de replay a ultimului joc
+   -Incepe de la final ( cu o mutare inainte de castig ) 
+   -Initial matricea va fi goala , prima comanda ar trebui sa fie back .
+   -Daca se trece de finalul jocului va iesi din functie ( va aparea meniul ).
+   
+  
 
